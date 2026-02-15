@@ -1,0 +1,62 @@
+---
+const { title } = Astro.props;
+---
+
+<main>
+	<h1>{title}</h1>
+
+	<div class="canvas-container">
+		<canvas></canvas>
+	</div>
+
+	<slot name="controls" />
+
+	<section class="description">
+		<slot name="description" />
+	</section>
+</main>
+
+<style>
+	.canvas-container {
+		height: 100vh;
+	}
+
+	canvas {
+		position: absolute;
+		left: 0;
+	}
+</style>
+
+<style is:global>
+	form.controls {
+		width: 90%;
+		max-width: 30rem;
+		margin: 1rem auto 1rem;
+		display: flex;
+		flex-flow: row;
+		flex-wrap: wrap;
+		justify-content: space-between;
+	}
+
+	form.controls .input-container {
+		height: 100%;
+		display: flex;
+		flex-flow: column;
+		margin-bottom: 1rem;
+	}
+
+	form.controls .input-container:not(:first-of-type) {
+		margin-left: 0.5rem;
+	}
+
+	form.controls .input-container:not(:last-of-type) {
+		margin-right: 0.5rem;
+	}
+
+	form.controls label {
+		text-transform: uppercase;
+		letter-spacing: 0.05rem;
+		font-size: 0.7rem;
+		margin-bottom: 0.1rem;
+	}
+</style>

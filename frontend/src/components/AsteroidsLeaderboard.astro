@@ -1,0 +1,170 @@
+---
+const { score, numScores } = Astro.props;
+---
+
+<div class="leaderboard" data-score={score} data-num-scores={numScores}>
+	<div class="score-info">
+		<span class="new-high-score" style="display:none;">New High Score!</span>
+		<span class="game-over-score">Score: {score}</span>
+	</div>
+	<div class="scores-container" style="display:none;">
+		<span>Leaderboard</span>
+		<ol></ol>
+	</div>
+</div>
+
+<script>
+	const leaderboard = document.querySelector(".leaderboard")!;
+	const score = Number(leaderboard.dataset.score);
+	const numScores = Number(leaderboard.dataset.numScores);
+	const newHighScoreEl = leaderboard.querySelector(".new-high-score") as HTMLElement;
+	const scoresContainer = leaderboard.querySelector(".scores-container") as HTMLElement;
+	const ol = leaderboard.querySelector("ol")!;
+
+	let playerName = "";
+	let scoreWasPosted = false;
+
+	async function fetchScores(): Promise<{ score: number; name: string }[]> {
+		const response = await fetch(`/api/asteroids_scores?limit=${numScores}`);
+		return await response.json();
+	}
+
+	async function postScore(name: string) {
+		await fetch("/api/asteroids_scores", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ score, name }),
+		});
+		scoreWasPosted = true;
+		const input = leaderboard.querySelector("input");
+		if (input) input.readOnly = true;
+	}
+
+	function render(highScores: { score: number; name: string }[]) {
+		if (highScores.length === 0) return;
+
+		scoresContainer.style.display = "";
+		ol.innerHTML = "";
+
+		for (const highScore of highScores) {
+			const li = document.createElement("li");
+			const span = document.createElement("span");
+
+			if (highScore.name === "$this") {
+				newHighScoreEl.style.display = "";
+
+				const scoreSpan = document.createElement("span");
+				scoreSpan.textContent = String(highScore.score);
+
+				const form = document.createElement("form");
+				const input = document.createElement("input");
+				input.type = "text";
+				input.size = 3;
+				input.maxLength = 3;
+				input.value = playerName;
+				input.addEventListener("input", () => {
+					playerName = input.value.toUpperCase();
+					input.value = playerName;
+				});
+
+				form.addEventListener("submit", (e) => {
+					e.preventDefault();
+					if (!scoreWasPosted) postScore(playerName);
+				});
+
+				form.appendChild(input);
+				span.appendChild(scoreSpan);
+				span.appendChild(form);
+
+				// Auto-focus the input
+				requestAnimationFrame(() => input.focus());
+			} else {
+				const scoreSpan = document.createElement("span");
+				scoreSpan.textContent = String(highScore.score);
+				const nameSpan = document.createElement("span");
+				nameSpan.textContent = highScore.name;
+				span.appendChild(scoreSpan);
+				span.appendChild(nameSpan);
+			}
+
+			li.appendChild(span);
+			ol.appendChild(li);
+		}
+	}
+
+	function checkAndHandleNewHighScore(highScores: { score: number; name: string }[]) {
+		const insertedHighScores = [...highScores];
+		let isNewHighScore = false;
+
+		if (highScores.length && score > highScores[highScores.length - 1].score) {
+			isNewHighScore = true;
+			let insertIndex = 0;
+			if (score <= highScores[0].score) {
+				for (let i = highScores.length - 1; i >= 0; i--) {
+					if (highScores[i].score >= score) {
+						insertIndex = i + 1;
+						break;
+					}
+				}
+			}
+			insertedHighScores.splice(insertIndex, 0, { score, name: "$this" });
+			if (insertedHighScores.length > numScores) {
+				insertedHighScores.pop();
+			}
+		} else if (highScores.length < numScores && score > 0) {
+			isNewHighScore = true;
+			insertedHighScores.push({ score, name: "$this" });
+		}
+
+		return insertedHighScores;
+	}
+
+	// Initialize
+	const highScores = await fetchScores();
+	const displayScores = checkAndHandleNewHighScore(highScores);
+	render(displayScores);
+</script>
+
+<style>
+	span {
+		text-align: center;
+		display: block;
+	}
+
+	.score-info {
+		margin-bottom: 0.5rem;
+	}
+
+	.game-over-score {
+		font-size: 1.25rem;
+	}
+
+	.new-high-score {
+		font-size: 1.25rem;
+	}
+
+	.leaderboard ol {
+		list-style-type: none;
+		padding: 0;
+		margin: 1rem auto;
+	}
+
+	.leaderboard ol li > span {
+		margin-bottom: 0.2rem;
+		display: flex;
+		flex-flow: row;
+		justify-content: space-between;
+	}
+
+	.leaderboard ol li span,
+	.leaderboard ol li input {
+		font-size: 0.8rem;
+	}
+
+	.leaderboard ol li input {
+		text-align: right;
+		width: 3rem;
+		padding: 0;
+		background-color: transparent;
+	}
+</style>

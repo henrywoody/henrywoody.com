@@ -1,0 +1,20 @@
+{
+	"name": "henrywoody.com",
+	"type": "module",
+	"version": "3.1.0",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"astro": "astro"
+	},
+	"dependencies": {
+		"astro": "5.17.1",
+		"highlight.js": "11.11.1"
+	},
+	"devDependencies": {
+		"@trivago/prettier-plugin-sort-imports": "6.0.2",
+		"prettier": "3.8.1",
+		"prettier-plugin-astro": "0.14.1"
+	}
+}

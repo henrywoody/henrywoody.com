@@ -1,0 +1,247 @@
+---
+const links = [
+	{ title: "Home", to: "/", exact: true },
+	{ title: "Projects", to: "/projects", exact: false },
+	{ title: "Links", to: "/links", exact: false },
+];
+
+const pathname = Astro.url.pathname;
+
+function isActive(link: { to: string; exact: boolean }) {
+	if (link.exact) {
+		return pathname === link.to;
+	}
+	return pathname.startsWith(link.to);
+}
+---
+
+<div>
+	<header>
+		<div class="header-bar">
+			<a href="/" class="site-title"> Henry Woody </a>
+			<nav>
+				<ul>
+					{
+						links.map((link) => (
+							<li>
+								<a href={link.to} title={link.title} class:list={[{ active: isActive(link) }]}>
+									{link.title}
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</nav>
+
+			<button class="btn-drawer" id="drawer-toggle">
+				<span class="rotated">&times;</span>
+			</button>
+		</div>
+
+		<div class="header-drawer collapsed" id="header-drawer">
+			<nav>
+				<ul>
+					{
+						links.map((link) => (
+							<li>
+								<a href={link.to} title={link.title} class:list={[{ active: isActive(link) }]}>
+									{link.title}
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</nav>
+		</div>
+	</header>
+</div>
+
+<script>
+	const drawer = document.getElementById("header-drawer")!;
+	const toggleBtn = document.getElementById("drawer-toggle")!;
+	const toggleSpan = toggleBtn.querySelector("span")!;
+	let drawerIsCollapsed = true;
+
+	function openDrawer() {
+		drawerIsCollapsed = false;
+		drawer.classList.remove("collapsed");
+		toggleSpan.classList.remove("rotated");
+		document.body.classList.add("no-scroll");
+		document.querySelector("main")?.addEventListener("click", toggleDrawer);
+	}
+
+	function closeDrawer() {
+		drawerIsCollapsed = true;
+		drawer.classList.add("collapsed");
+		toggleSpan.classList.add("rotated");
+		document.body.classList.remove("no-scroll");
+		document.querySelector("main")?.removeEventListener("click", toggleDrawer);
+	}
+
+	function toggleDrawer() {
+		if (drawerIsCollapsed) {
+			openDrawer();
+		} else {
+			closeDrawer();
+		}
+	}
+
+	toggleBtn.addEventListener("click", toggleDrawer);
+
+	// Close drawer when a link inside it is clicked
+	drawer.querySelectorAll("a").forEach((link) => {
+		link.addEventListener("click", closeDrawer);
+	});
+</script>
+
+<style>
+	header {
+		--header-drawer-transition-timing: 0.3s ease-out;
+		--button-height: 1.5rem;
+	}
+
+	.header-bar,
+	.header-drawer {
+		background-color: var(--header-background-color);
+	}
+
+	.header-bar,
+	.header-drawer,
+	a {
+		color: var(--header-color);
+
+		transition: var(--dark-mode-transition);
+	}
+
+	.header-bar {
+		width: 100vw;
+		height: var(--header-height);
+		padding: 0 1rem;
+		display: flex;
+		flex-flow: row;
+		justify-content: space-between;
+		align-items: center;
+		box-sizing: border-box;
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 1000;
+	}
+
+	.header-drawer {
+		--header-drawer-width: 12rem;
+		width: var(--header-drawer-width);
+		height: 100vh;
+		position: fixed;
+		left: 0;
+		top: 0;
+		z-index: 999;
+
+		transition:
+			var(--dark-mode-transition),
+			left var(--header-drawer-transition-timing);
+	}
+
+	.header-drawer.collapsed {
+		left: calc(-1 * var(--header-drawer-width));
+	}
+
+	.header-drawer nav {
+		margin-top: 3rem;
+		display: flex;
+		flex-flow: column;
+	}
+
+	.header-drawer nav li {
+		display: block;
+		margin-bottom: 1rem;
+	}
+
+	.site-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
+
+	nav ul {
+		list-style-type: none;
+	}
+
+	a {
+		text-decoration: none;
+		letter-spacing: 0.05rem;
+	}
+
+	a::after {
+		content: attr(title);
+		font-weight: 600;
+		height: 0;
+		display: block;
+		overflow: hidden;
+		visibility: hidden;
+	}
+
+	a.active:not(.site-title) {
+		font-weight: 600;
+	}
+
+	.header-bar button.btn-drawer {
+		width: var(--button-height);
+		padding: 0;
+		display: flex;
+		justify-content: center;
+		position: relative;
+	}
+
+	.header-bar button.btn-drawer span {
+		--span-height: 1.1rem;
+		--span-width: 1.1rem;
+		font-size: 1.75rem;
+		width: var(--span-width);
+		height: var(--span-height);
+		line-height: 0.85rem;
+		text-align: center;
+		display: block;
+		position: absolute;
+		left: calc((var(--button-height) - var(--span-width)) / 2);
+		top: calc((var(--button-height) - var(--span-height)) / 2);
+		transition: transform var(--header-drawer-transition-timing);
+	}
+
+	.header-bar button.btn-drawer span.rotated {
+		transform: rotate(-45deg);
+		transform-origin: center center;
+	}
+
+	.header-bar nav ul {
+		display: none;
+	}
+
+	button {
+		color: var(--color);
+		background-color: var(--background-color);
+	}
+
+	@media all and (min-width: 750px) {
+		.header-bar nav ul {
+			display: flex;
+			flex-flow: row;
+			justify-content: space-between;
+		}
+
+		.header-bar nav li {
+			display: inline-block;
+		}
+
+		.header-bar nav li:not(:last-of-type) {
+			margin-right: 1.5rem;
+		}
+
+		.header-bar button.btn-drawer {
+			display: none;
+		}
+
+		.header-drawer {
+			display: none;
+		}
+	}
+</style>

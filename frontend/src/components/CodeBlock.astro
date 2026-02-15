@@ -1,0 +1,174 @@
+---
+import hljs from "highlight.js/lib/core";
+import python from "highlight.js/lib/languages/python";
+
+hljs.registerLanguage("python", python);
+
+const { code, language } = Astro.props;
+const highlighted = hljs.highlight(code, { language }).value;
+---
+
+<pre><code class:list={["hljs", language]} set:html={highlighted} /></pre>
+
+<style is:global>
+	/* https://highlightjs.org */
+
+	.hljs {
+		display: block;
+		padding: 0.5em;
+		overflow-x: auto;
+	}
+
+	/*LIGHT*/
+	.hljs {
+		background-color: var(--background-color);
+		color: #333333;
+	}
+
+	.hljs-comment,
+	.hljs-meta {
+		color: #969896;
+	}
+
+	.hljs-string,
+	.hljs-variable,
+	.hljs-template-variable,
+	.hljs-strong,
+	.hljs-emphasis,
+	.hljs-quote {
+		color: #df5000;
+	}
+
+	.hljs-keyword,
+	.hljs-selector-tag,
+	.hljs-type {
+		color: #a71d5d;
+	}
+
+	.hljs-literal,
+	.hljs-symbol,
+	.hljs-bullet,
+	.hljs-attribute {
+		color: #0086b3;
+	}
+
+	.hljs-section,
+	.hljs-name {
+		color: #63a35c;
+	}
+
+	.hljs-tag {
+		color: #333333;
+	}
+
+	.hljs-title,
+	.hljs-attr,
+	.hljs-selector-id,
+	.hljs-selector-class,
+	.hljs-selector-attr,
+	.hljs-selector-pseudo {
+		color: #795da3;
+	}
+
+	.hljs-addition {
+		color: #55a532;
+		background-color: #eaffea;
+	}
+
+	.hljs-deletion {
+		color: #bd2c00;
+		background-color: #ffecec;
+	}
+
+	.hljs-link {
+		text-decoration: underline;
+	}
+
+	/*DARK*/
+	@media (prefers-color-scheme: dark) {
+		.hljs {
+			background-color: var(--background-color);
+			color: #f8f8f2;
+		}
+
+		.hljs-tag,
+		.hljs-subst {
+			color: #f8f8f2;
+		}
+
+		.hljs-strong,
+		.hljs-emphasis {
+			color: #a8a8a2;
+		}
+
+		.hljs-bullet,
+		.hljs-quote,
+		.hljs-number,
+		.hljs-regexp,
+		.hljs-literal,
+		.hljs-link {
+			color: #ae81ff;
+		}
+
+		.hljs-code,
+		.hljs-title,
+		.hljs-section,
+		.hljs-selector-class {
+			color: #a6e22e;
+		}
+
+		.hljs-strong {
+			font-weight: bold;
+		}
+
+		.hljs-emphasis {
+			font-style: italic;
+		}
+
+		.hljs-keyword,
+		.hljs-selector-tag,
+		.hljs-name,
+		.hljs-attr {
+			color: #f92672;
+		}
+
+		.hljs-symbol,
+		.hljs-attribute {
+			color: #66d9ef;
+		}
+
+		.hljs-params,
+		.hljs-class .hljs-title {
+			color: #f8f8f2;
+		}
+
+		.hljs-string,
+		.hljs-type,
+		.hljs-built_in,
+		.hljs-builtin-name,
+		.hljs-selector-id,
+		.hljs-selector-attr,
+		.hljs-selector-pseudo,
+		.hljs-addition,
+		.hljs-variable,
+		.hljs-template-variable {
+			color: #e6db74;
+		}
+
+		.hljs-comment,
+		.hljs-deletion,
+		.hljs-meta {
+			color: #75715e;
+		}
+
+		.hljs-addition {
+			color: #55a532;
+			background-color: transparent;
+		}
+
+		.hljs-deletion {
+			color: #bd2c00;
+			background-color: transparent;
+		}
+	}
+</style>

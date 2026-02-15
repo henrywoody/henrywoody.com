@@ -1,0 +1,202 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CanvasProject from "../../components/CanvasProject.astro";
+import ExternalLink from "../../components/ExternalLink.astro";
+---
+
+<Layout title="Two Dimensional Cellular Automata | Henry Woody">
+	<CanvasProject title="Two Dimensional Cellular Automata">
+		<form slot="controls" class="controls">
+			<div class="input-container">
+				<label for="speed">Speed</label>
+				<input id="speed" type="range" name="speed" max="10" min="1" value="3" />
+				<input class="range-standin" type="number" name="speed-standin" max="10" min="1" value="3" />
+			</div>
+
+			<div class="input-container">
+				<label for="alive-color">Alive Color</label>
+				<input type="color" name="alive-color" id="alive-color" value="#000000" />
+			</div>
+
+			<div class="input-container">
+				<label for="dead-color">Dead Color</label>
+				<input type="color" name="dead-color" id="dead-color" />
+			</div>
+
+			<div class="input-container">
+				<button type="button" id="reset-btn">Reset</button>
+			</div>
+		</form>
+
+		<Fragment slot="description">
+			<p>
+				A two dimensional cellular automaton is a discrete mathematical model for simulating complex systems. The
+				environment is a 2D grid of cells where each cell can have one several possible states.
+			</p>
+
+			<p>
+				The state of each cell in the next stage, or time step, is determined by its current state and the states of its
+				neighbors. How neighbors are selected can vary, but the two most common choices are the Von Neumann neighborhood
+				(4 adjacent neighbors) and the Moore neighborhood (8 surrounding cells).
+			</p>
+
+			<p>
+				The next state of a cell is determined according to a rule. A rule is a mapping from arrangements of current
+				cell states to the next cell state. Generally, rules in the two dimensional case consider only the number of
+				neighboring cells with each state, rather than the actual spacial arrangement of those cells and states. For
+				example, a rule can specify that any neighbor with three living neighbors that is currently alive stays alive,
+				and dies otherwise.
+			</p>
+
+			<h2>Game of Life</h2>
+
+			<p>
+				<ExternalLink href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</ExternalLink> is
+				a classic rule for two dimensional cellular automata. There are two possible states, generally interpreted as alive
+				and dead, and the system uses the Moore neighborhood. The rules are as follows:
+
+				<ol>
+					<li>Any living cell with fewer than two live neighbors dies from isolation</li>
+					<li>Any living cell with two or three live neighbors stays alive</li>
+					<li>Any dead cell with exactly three live neighbors comes to life</li>
+					<li>Any living cell with more than three live neighbors dies from overcrowding</li>
+				</ol>
+			</p>
+		</Fragment>
+	</CanvasProject>
+</Layout>
+
+<script>
+	import { isDarkModeOn } from "../../utilities/theme";
+
+	const canvas = document.querySelector("canvas")!;
+	const ctx = canvas.getContext("2d")!;
+	const speedInput = document.getElementById("speed") as HTMLInputElement;
+	const speedStandinInput = document.querySelector("input[name='speed-standin']") as HTMLInputElement;
+	const aliveColorInput = document.getElementById("alive-color") as HTMLInputElement;
+	const deadColorInput = document.getElementById("dead-color") as HTMLInputElement;
+	const resetBtn = document.getElementById("reset-btn")!;
+
+	if (isDarkModeOn()) {
+		aliveColorInput.value = "#ffffff";
+		deadColorInput.value = "#333333";
+	} else {
+		aliveColorInput.value = "#000000";
+		deadColorInput.value = "#ffffff";
+	}
+
+	const cellSize = 5;
+	const initialLiveProb = 0.15;
+	let grid: number[][] = [];
+	let tickCounter = 0;
+
+	speedInput.addEventListener("input", () => {
+		speedStandinInput.value = speedInput.value;
+	});
+	speedStandinInput.addEventListener("input", () => {
+		speedInput.value = speedStandinInput.value;
+	});
+
+	function resizeCanvas() {
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+	}
+
+	function getNumRows() {
+		return Math.floor(canvas.height / cellSize);
+	}
+	function getNumCols() {
+		return Math.floor(canvas.width / cellSize);
+	}
+
+	function getBlankGrid() {
+		const nRows = getNumRows();
+		const nCols = getNumCols();
+		const g: number[][] = Array(nRows).fill(0);
+		for (let i = 0; i < nRows; i++) {
+			g[i] = Array(nCols).fill(0);
+		}
+		return g;
+	}
+
+	function getRandomGrid(liveProb: number) {
+		liveProb = liveProb || 0.5;
+		const g = getBlankGrid();
+		for (let i = 0; i < g.length; i++) {
+			for (let j = 0; j < g[0].length; j++) {
+				g[i][j] = Math.random() < liveProb ? 1 : 0;
+			}
+		}
+		return g;
+	}
+
+	function getNextCellState(i: number, j: number) {
+		const cellState = grid[i][j];
+		let neighborhood = grid.slice(i - 1, i + 2).map((e) => e.slice(j - 1, j + 2));
+		const flat = neighborhood.reduce((a, e) => a.concat(e), []);
+		const numLiving = flat.reduce((a, e) => a + e, 0);
+		switch (numLiving - cellState) {
+			case 2:
+				return cellState;
+			case 3:
+				return 1;
+			default:
+				return 0;
+		}
+	}
+
+	function setUp() {
+		resizeCanvas();
+		grid = getRandomGrid(initialLiveProb);
+		tickCounter = 0;
+	}
+
+	function update() {
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		const speed = Number(speedInput.value);
+		tickCounter = (tickCounter + 1) % (11 - speed);
+		if (tickCounter === 0) {
+			const newGrid = getBlankGrid();
+			for (let i = 0; i < grid.length; i++) {
+				for (let j = 0; j < grid[0].length; j++) {
+					newGrid[i][j] = getNextCellState(i, j);
+				}
+			}
+			grid = newGrid;
+		}
+		draw();
+	}
+
+	function draw() {
+		const aliveColor = aliveColorInput.value;
+		const deadColor = deadColorInput.value;
+		for (let i = 0; i < grid.length; i++) {
+			for (let j = 1; j < grid[0].length; j++) {
+				const state = grid[i][j];
+				const color = state === 1 ? aliveColor : deadColor;
+				if (color) {
+					const y = i * cellSize;
+					const x = j * cellSize;
+					ctx.fillStyle = color;
+					ctx.fillRect(x, y, cellSize, cellSize);
+				}
+			}
+		}
+	}
+
+	function run() {
+		update();
+		window.requestAnimationFrame(run);
+	}
+
+	resetBtn.addEventListener("click", () => setUp());
+	window.addEventListener("resize", resizeCanvas);
+	setUp();
+	run();
+</script>
+
+<style>
+	button {
+		margin-top: 0.5rem;
+	}
+</style>

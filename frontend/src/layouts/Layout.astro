@@ -1,0 +1,229 @@
+---
+import Header from "../components/Header.astro";
+
+interface Props {
+	title?: string;
+	class?: string | undefined | null;
+}
+
+const { title = "Henry Woody", class: className, ...rest } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body class={className} {...rest}>
+		<Header />
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	body {
+		--color: #333;
+		--inverted-color: #eee;
+		--background-color: #fff;
+		--accent-background-color: #eee;
+		--inverted-background-color: #333;
+		--shadow-color: #777;
+		--header-color: var(--inverted-color);
+		--header-background-color: var(--inverted-background-color);
+		--button-background-color: var(--inverted-color);
+
+		--shadow-offset: 0.1rem;
+		--shadow-blur: 0.2rem;
+		--box-shadow:
+			var(--shadow-offset) var(--shadow-offset) var(--shadow-blur) var(--shadow-color),
+			0 0 var(--shadow-blur) var(--shadow-color);
+		--box-shadow-translate: translate(0, calc(-1 * var(--shadow-offset)));
+		--box-shadow-inset:
+			inset 0 0 var(--shadow-blur) var(--shadow-color),
+			inset var(--shadow-offset) var(--shadow-offset) var(--shadow-blur) var(--shadow-color);
+		--box-shadow-inset-translate: translate(0, var(--shadow-offset));
+
+		--header-height: 2.5rem;
+
+		--font-family:
+			-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji",
+			"Segoe UI Emoji";
+		font-family: var(--font-family);
+		line-height: 1.25;
+		font-size: 1.1rem;
+		color: var(--color);
+		background-color: var(--background-color);
+		margin: 0;
+		overflow: auto;
+
+		min-height: calc(100vh - var(--header-height));
+
+		-moz-osx-font-smoothing: grayscale;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		body {
+			--color: #eee;
+			--inverted-color: #333;
+			--background-color: #333;
+			--accent-background-color: #555;
+			--inverted-background-color: #fff;
+			--shadow-color: #000;
+			--header-color: var(--color);
+			--header-background-color: #555;
+			--button-background-color: #555;
+		}
+	}
+
+	main {
+		padding: 0 2rem 1rem;
+		margin-top: var(--header-height);
+		box-sizing: border-box;
+		overflow: auto;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		font-weight: 400;
+	}
+
+	h2 {
+		font-weight: 2rem;
+		font-weight: 400;
+	}
+
+	a {
+		color: var(--color);
+		transition: var(--dark-mode-transition);
+	}
+
+	input {
+		color: var(--color);
+		font-size: 1.2rem;
+		font-family: var(--font-family);
+		background-color: var(--background-color);
+		width: 5rem;
+		outline: none;
+		border: none;
+
+		transition: var(--dark-mode-transition);
+	}
+
+	button {
+		color: var(--color);
+		background-color: var(--button-background-color);
+		height: 1.5rem;
+		outline: none;
+		border: none;
+
+		transition: var(--dark-mode-transition);
+	}
+
+	code,
+	pre {
+		font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+		padding: 0.2em;
+		margin: 0;
+		font-size: 0.875rem;
+		border-radius: 0.8em;
+	}
+
+	button:active {
+		transform: translate(0.05rem, 0.05rem);
+	}
+
+	.fixed {
+		position: fixed !important;
+	}
+
+	.no-scroll {
+		overflow: hidden;
+	}
+
+	section.description {
+		width: 100%;
+		max-width: 30rem;
+		margin: 0 auto 1rem;
+	}
+
+	input[type="range"] {
+		display: none;
+	}
+
+	@media all and (min-width: 800px) {
+		input[type="range"] {
+			display: initial;
+		}
+
+		input.range-standin {
+			display: none;
+		}
+	}
+
+	@media print {
+		header {
+			display: none !important;
+		}
+
+		main {
+			margin-top: 0;
+		}
+	}
+
+	.quote-container {
+		width: fit-content;
+		margin: 0 auto 2rem;
+		display: flex;
+		flex-flow: column;
+		align-items: flex-end;
+	}
+
+	.quote-container blockquote {
+		background-color: var(--accent-background-color);
+		width: fit-content;
+		padding: 0.8rem 1.2rem;
+		margin: 0 0 0.5rem;
+		transition: background-color var(--dark-mode-transition-time);
+	}
+
+	.quote-container .quote-attribution {
+		width: fit-content;
+		padding-right: 0.5rem;
+	}
+
+	.quote-container .quote-attribution::before {
+		content: "―";
+	}
+
+	.image-container {
+		width: 100%;
+		margin-bottom: 1rem;
+	}
+
+	.image-container img {
+		width: 100%;
+	}
+
+	.image-container .image-description {
+		font-size: 0.9rem;
+	}
+
+	.video-container {
+		width: 100%;
+	}
+
+	.video-container video {
+		width: 100%;
+	}
+</style>

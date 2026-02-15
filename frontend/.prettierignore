@@ -1,0 +1,10 @@
+# Ignore artifacts:
+dist
+coverage
+docs
+build
+storybook-static
+__snapshots__
+
+# Ignore all HTML files:
+*.html

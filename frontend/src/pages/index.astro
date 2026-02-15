@@ -1,0 +1,220 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+	<main>
+		<div class="welcome">
+			<h1 @click="this.reset">welcome</h1>
+		</div>
+		<canvas id="welcome-canvas"></canvas>
+	</main>
+</Layout>
+
+<script>
+	import { isDarkModeOn } from "../utilities/theme";
+
+	let canvas: HTMLCanvasElement | null;
+	let ctx: CanvasRenderingContext2D | null;
+	let width: number;
+	let height: number;
+	let requestID: number | null;
+	const stepSize = 1;
+	const splitProb = (stepSize / 2) * 0.015;
+	const numPointChoices = [2, 4, 6, 10, 20];
+	const angleChoices = [2, 3, 4, 6, 10].map((e) => Math.PI / e);
+	const splitAngleDiff = angleChoices[Math.round(Math.random() * (angleChoices.length - 1))];
+	type PointSet = {
+		id: number;
+		alpha: number;
+		age: number;
+		points: {
+			x: number;
+			y: number;
+			d: number;
+		}[];
+	};
+	let pointSets: PointSet[] = [];
+	const maxPointSetSize = Math.pow(2, 7);
+	const maxAge = 5000;
+	let counter = 0;
+	const phaseDuration = 750;
+	let phases = ["#222222", "#16b2ff"];
+	let fadeFactor = 1.5;
+	if (isDarkModeOn()) {
+		phases = ["#ffffff", "#ffd700"];
+		fadeFactor = 1.7;
+	}
+	let phaseIndex = 0;
+	const maxPhases = 2;
+	let totalPhases = 0;
+	const refreshTime = Math.round(Math.log(stepSize)) + 1;
+
+	function init() {
+		setUp();
+		run();
+	}
+	init();
+
+	function reset() {
+		if (requestID !== null) {
+			window.cancelAnimationFrame(requestID);
+		}
+		setUp();
+		run();
+	}
+	document.querySelector(".welcome h1")!.addEventListener("click", reset);
+
+	function setUp() {
+		canvas = document.querySelector("#welcome-canvas") as HTMLCanvasElement;
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+		width = canvas.width;
+		height = canvas.height;
+		ctx = canvas.getContext("2d");
+		requestID = null;
+
+		pointSets = [];
+
+		counter = 0;
+		phaseIndex = 0;
+		totalPhases = 0;
+
+		addPointSet();
+	}
+
+	function run() {
+		if (counter % refreshTime == 0) {
+			maybeSplitPoints();
+			movePoints();
+			drawPoints();
+		}
+
+		if (totalPhases < maxPhases && counter++ >= phaseDuration) {
+			addPointSet();
+			counter = 0;
+		}
+
+		removeOldPointSets();
+		requestID = window.requestAnimationFrame(run);
+	}
+
+	function addPointSet() {
+		pointSets.push({
+			id: phaseIndex,
+			alpha: 1,
+			age: 0,
+			points: setPoints(),
+		});
+		totalPhases++;
+		phaseIndex = (phaseIndex + 1) % phases.length;
+	}
+
+	function setPoints() {
+		const numPoints = numPointChoices[Math.floor(Math.random() * numPointChoices.length)];
+		const points = [];
+		for (let i = 0; i < numPoints; i++) {
+			points.push({
+				x: width / 2,
+				y: height / 2,
+				d: (2 * i * Math.PI) / numPoints,
+			});
+		}
+		return points;
+	}
+
+	function movePoints() {
+		pointSets = pointSets.map((pointSet) => {
+			return {
+				...pointSet,
+				age: ++pointSet.age,
+				points: pointSet.points.map((point) => ({
+					x: point.x + stepSize * Math.cos(point.d),
+					y: point.y + stepSize * Math.sin(point.d),
+					d: point.d,
+				})),
+			};
+		});
+	}
+
+	function maybeSplitPoints() {
+		pointSets = pointSets.map((pointSet) => {
+			if (pointSet.points.length <= maxPointSetSize && Math.random() < splitProb) {
+				return {
+					...pointSet,
+					alpha: pointSet.alpha / fadeFactor,
+					points: pointSet.points.reduce(
+						(a, e) =>
+							a.concat([
+								{ x: e.x, y: e.y, d: e.d + splitAngleDiff },
+								{ x: e.x, y: e.y, d: e.d - splitAngleDiff },
+							]),
+						[] as PointSet["points"],
+					),
+				};
+			} else {
+				return pointSet;
+			}
+		});
+	}
+
+	function drawPoints() {
+		if (!ctx) {
+			return;
+		}
+
+		for (const pointSet of pointSets) {
+			ctx.fillStyle = phases[pointSet.id];
+			ctx.globalAlpha = pointSet.alpha;
+			for (const point of pointSet.points) {
+				ctx.fillRect(point.x, point.y, stepSize, stepSize);
+			}
+		}
+	}
+
+	function removeOldPointSets() {
+		pointSets = pointSets.filter((e) => e.age <= maxAge);
+	}
+</script>
+
+<style>
+	main {
+		max-width: 100vw;
+		height: calc(100vh - var(--header-height));
+	}
+
+	.welcome {
+		position: absolute;
+		top: 40%;
+		left: 10%;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	.welcome h1 {
+		font-family: Roboto, Arial;
+		font-weight: 300;
+		font-size: 3.5rem;
+		letter-spacing: 0.3rem;
+		color: var(--color);
+		cursor: pointer;
+		text-shadow:
+			-1px -1px 0 var(--background-color),
+			1px -1px 0 var(--background-color),
+			-1px 1px 0 var(--background-color),
+			1px 1px 0 var(--background-color);
+
+		transition:
+			var(--dark-mode-transition),
+			var(--dark-mode-transition-time) text-shadow;
+	}
+
+	canvas {
+		width: 100vw;
+		height: 100vh;
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: -1;
+	}
+</style>
