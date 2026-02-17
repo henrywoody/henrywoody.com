@@ -324,9 +324,8 @@ import Layout from "../layouts/Layout.astro";
 		direction: number;
 		velocity: [number, number];
 		addBulletFn: (b: Bullet) => void;
-		maxSpeed = 4;
-		acceleration = 0.15;
-		deceleration = 0.995;
+		acceleration = 0.3;
+		deceleration = 0.999;
 		turnSpeed = Math.PI / 30;
 		size = 12;
 		shotCoolDownTime = 15;
@@ -371,11 +370,8 @@ import Layout from "../layouts/Layout.astro";
 		}
 
 		accelerate() {
-			const speed = Math.sqrt(this.velocity[0] ** 2 + this.velocity[1] ** 2);
-			if (speed < this.maxSpeed) {
-				this.velocity[0] += this.acceleration * Math.cos(this.direction);
-				this.velocity[1] += this.acceleration * Math.sin(this.direction);
-			}
+			this.velocity[0] += this.acceleration * Math.cos(this.direction);
+			this.velocity[1] += this.acceleration * Math.sin(this.direction);
 		}
 
 		turnLeft() {
@@ -386,7 +382,7 @@ import Layout from "../layouts/Layout.astro";
 		}
 
 		shoot() {
-			this.addBulletFn(new Bullet([...this.position] as [number, number], this.direction));
+			this.addBulletFn(new Bullet([...this.position], [...this.velocity], this.direction));
 			this.shotCounter = this.shotCoolDownTime;
 		}
 
@@ -455,9 +451,12 @@ import Layout from "../layouts/Layout.astro";
 		size = 1;
 		isActive = true;
 
-		constructor(initPosition: [number, number], direction: number) {
+		constructor(initPosition: [number, number], initVelocity: [number, number], direction: number) {
 			this.position = initPosition;
-			this.velocity = [this.speed * Math.cos(direction), this.speed * Math.sin(direction)];
+			this.velocity = [
+				initVelocity[0] + this.speed * Math.cos(direction),
+				initVelocity[1] + this.speed * Math.sin(direction),
+			];
 		}
 
 		update() {
