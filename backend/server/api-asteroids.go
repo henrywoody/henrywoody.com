@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -23,16 +24,25 @@ type AsteroidScore struct {
 	Score int    `json:"score"`
 }
 
-func getAsteroidsScores(w http.ResponseWriter, r *http.Request) {
-	queryText := "SELECT name, score FROM asteroids_score ORDER BY score DESC"
-	var queryValues []interface{}
+const maxLimit = 100
 
-	if limit := r.URL.Query().Get("limit"); limit != "" {
-		queryText += " LIMIT $1"
-		queryValues = append(queryValues, limit)
+func getAsteroidsScores(w http.ResponseWriter, r *http.Request) {
+	queryText := "SELECT name, score FROM asteroids_score ORDER BY score DESC LIMIT $1"
+
+	limit := 10
+	if limitParamStr := r.URL.Query().Get("limit"); limitParamStr != "" {
+		limitParam, err := strconv.Atoi(limitParamStr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if limitParam > maxLimit {
+			limit = maxLimit
+		} else {
+			limit = limitParam
+		}
 	}
 
-	rows, err := db.Query(queryText, queryValues...)
+	rows, err := db.Query(queryText, limit)
 	if err != nil {
 		log.Fatal(err)
 	}

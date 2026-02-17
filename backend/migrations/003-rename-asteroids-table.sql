@@ -1,4 +1,5 @@
-ALTER TABLE
-    asteroids_scores
-RENAME TO
-    asteroids_score;
+BEGIN;
+
+ALTER TABLE asteroids_scores RENAME TO asteroids_score;
+
+COMMIT;
