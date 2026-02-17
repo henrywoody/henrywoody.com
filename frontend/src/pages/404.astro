@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 ---
 
 <Layout title="Asteroids | Henry Woody">
@@ -10,25 +9,54 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 		<div id="asteroids-container">
 			<span class="score" id="score-display">Score: 0</span>
 			<canvas></canvas>
-			<div class="game-over" id="game-over" style="display:none;">
-				<span class="game-over-message">Game Over</span>
-				<div id="leaderboard-container"></div>
+
+			<div class="game-over-menu" id="game-over-menu" style="display:none;">
+				<div class="game-over-message">Game Over</div>
+
+				<div class="game-over-menu__score-container">
+					<div id="game-over-score">Score: 0</div>
+					<strong id="new-high-score">New High Score!</strong>
+				</div>
+
+				<div id="leaderboard-container">
+					<div class="leaderboard-label">Leaderboard</div>
+					<table class="leaderboard-scores-table">
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Score</th>
+								<th>Name</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>1.</td>
+								<td>0</td>
+								<td>NUL</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 				<button id="play-again-btn">Play Again?</button>
 			</div>
+
 			<input class="focus-attractor" id="focus-attractor" />
 		</div>
 	</main>
 </Layout>
 
 <script>
+	import { getAsteroidsScores, postAsteroidsScore } from "../utilities/api";
 	import { isDarkModeOn } from "../utilities/theme";
 
 	const container = document.getElementById("asteroids-container")!;
 	const canvas = container.querySelector("canvas")!;
 	const ctx = canvas.getContext("2d")!;
 	const scoreDisplay = document.getElementById("score-display")!;
-	const gameOverEl = document.getElementById("game-over")!;
-	const leaderboardContainer = document.getElementById("leaderboard-container")!;
+	const gameOverMenu = document.getElementById("game-over-menu")!;
+	const gameOverScoreEl = document.getElementById("game-over-score")!;
+	const newHighScoreEl = document.getElementById("new-high-score")!;
+	const leaderboardScoresTableBody = document.querySelector(".leaderboard-scores-table tbody")!;
 	const playAgainBtn = document.getElementById("play-again-btn")!;
 	const focusAttractor = document.getElementById("focus-attractor") as HTMLInputElement;
 
@@ -63,8 +91,9 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 		time = 0;
 		scoreDisplay.textContent = "Score: 0";
 		scoreDisplay.style.display = "";
-		gameOverEl.style.display = "none";
-		leaderboardContainer.innerHTML = "";
+		gameOverMenu.style.display = "none";
+		newHighScoreEl.style.display = "none";
+		leaderboardScoresTableBody.innerHTML = "";
 		focusAttractor.focus();
 		focusAttractor.blur();
 	}
@@ -81,14 +110,20 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 		ctx.strokeStyle = color;
 
 		ship.update(canvas.width, canvas.height);
-		for (const bullet of bullets) bullet.update();
-		for (const asteroid of asteroids) asteroid.update();
+		for (const bullet of bullets) {
+			bullet.update();
+		}
+		for (const asteroid of asteroids) {
+			asteroid.update();
+		}
 		removeOutOfBoundsObjects();
 		makeRandomAsteroids();
 		checkCollisions();
 		removeInactiveObjects();
 
-		if (!gameOver) time++;
+		if (!gameOver) {
+			time++;
+		}
 	}
 
 	function addBullet(bullet: Bullet) {
@@ -171,16 +206,14 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 	function endGame() {
 		gameOver = true;
 		scoreDisplay.style.display = "none";
-		gameOverEl.style.display = "";
-		// Build leaderboard dynamically
+		gameOverMenu.style.display = "";
 		buildLeaderboard();
 	}
 
 	async function buildLeaderboard() {
-		const numScores = 10;
+		const scoreCount = 10;
 		try {
-			const response = await fetch(`/api/asteroids_scores?limit=${numScores}`);
-			const highScores: { score: number; name: string }[] = await response.json();
+			const highScores = await getAsteroidsScores(scoreCount);
 
 			let displayScores = [...highScores];
 			let isNewHighScore = false;
@@ -197,48 +230,37 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 					}
 				}
 				displayScores.splice(insertIndex, 0, { score, name: "$this" });
-				if (displayScores.length > numScores) displayScores.pop();
-			} else if (highScores.length < numScores && score > 0) {
+				if (displayScores.length > scoreCount) {
+					displayScores.pop();
+				}
+			} else if (highScores.length < scoreCount && score > 0) {
 				isNewHighScore = true;
 				displayScores.push({ score, name: "$this" });
 			}
 
-			leaderboardContainer.innerHTML = "";
-			const wrapper = document.createElement("div");
-			wrapper.className = "leaderboard";
-
-			const scoreInfo = document.createElement("div");
-			scoreInfo.className = "score-info";
+			gameOverScoreEl.textContent = `Score: ${score}`;
 			if (isNewHighScore) {
-				const nhsSpan = document.createElement("span");
-				nhsSpan.className = "new-high-score";
-				nhsSpan.textContent = "New High Score!";
-				scoreInfo.appendChild(nhsSpan);
+				newHighScoreEl.style.display = "block";
 			}
-			const gsSpan = document.createElement("span");
-			gsSpan.className = "game-over-score";
-			gsSpan.textContent = `Score: ${score}`;
-			scoreInfo.appendChild(gsSpan);
-			wrapper.appendChild(scoreInfo);
 
+			leaderboardScoresTableBody.innerHTML = "";
 			if (displayScores.length) {
-				const label = document.createElement("span");
-				label.textContent = "Leaderboard";
-				label.style.textAlign = "center";
-				label.style.display = "block";
-				wrapper.appendChild(label);
-
-				const ol = document.createElement("ol");
 				let playerName = "";
 				let scoreWasPosted = false;
 
-				for (const hs of displayScores) {
-					const li = document.createElement("li");
-					const span = document.createElement("span");
+				for (let i = 0; i < displayScores.length; i++) {
+					const hs = displayScores[i];
+					const row = document.createElement("tr");
 
 					if (hs.name === "$this") {
-						const sSpan = document.createElement("span");
-						sSpan.textContent = String(hs.score);
+						const rankCell = document.createElement("td");
+						rankCell.textContent = `${i + 1}.`;
+						row.appendChild(rankCell);
+
+						const scoreCell = document.createElement("td");
+						scoreCell.textContent = String(hs.score);
+						row.appendChild(scoreCell);
+
 						const form = document.createElement("form");
 						const input = document.createElement("input");
 						input.type = "text";
@@ -251,46 +273,41 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 						form.addEventListener("submit", async (e) => {
 							e.preventDefault();
 							if (!scoreWasPosted) {
-								await fetch("/api/asteroids_scores", {
-									method: "POST",
-									headers: { "Content-Type": "application/json" },
-									body: JSON.stringify({ score, name: playerName }),
-								});
+								await postAsteroidsScore(playerName, score);
 								scoreWasPosted = true;
 								input.readOnly = true;
 							}
 						});
 						form.appendChild(input);
-						span.appendChild(sSpan);
-						span.appendChild(form);
+						const nameCell = document.createElement("td");
+						nameCell.appendChild(form);
+						row.appendChild(nameCell);
 						requestAnimationFrame(() => input.focus());
 					} else {
-						const sSpan = document.createElement("span");
-						sSpan.textContent = String(hs.score);
-						const nSpan = document.createElement("span");
-						nSpan.textContent = hs.name;
-						span.appendChild(sSpan);
-						span.appendChild(nSpan);
+						const rankCell = document.createElement("td");
+						rankCell.textContent = `${i + 1}.`;
+						row.appendChild(rankCell);
+
+						const scoreCell = document.createElement("td");
+						scoreCell.textContent = String(hs.score);
+						row.appendChild(scoreCell);
+
+						const nameCell = document.createElement("td");
+						nameCell.textContent = String(hs.name);
+						row.appendChild(nameCell);
 					}
 
-					li.appendChild(span);
-					ol.appendChild(li);
+					leaderboardScoresTableBody.appendChild(row);
 				}
-				wrapper.appendChild(ol);
 			}
-			leaderboardContainer.appendChild(wrapper);
-		} catch (e) {
-			// If API is unavailable, just show the score
-			const p = document.createElement("p");
-			p.textContent = `Final Score: ${score}`;
-			p.style.textAlign = "center";
-			leaderboardContainer.appendChild(p);
-		}
+		} catch (e) {}
 	}
 
 	function draw() {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		if (!gameOver) ship.draw(ctx);
+		if (!gameOver) {
+			ship.draw(ctx);
+		}
 		for (const bullet of bullets) bullet.draw(ctx);
 		for (const asteroid of asteroids) asteroid.draw(ctx);
 	}
@@ -447,6 +464,7 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 			this.position[0] += this.velocity[0];
 			this.position[1] += this.velocity[1];
 		}
+
 		hit() {
 			this.isActive = false;
 		}
@@ -530,62 +548,73 @@ import AsteroidsLeaderboard from "../components/AsteroidsLeaderboard.astro";
 		top: var(--header-height);
 	}
 
-	.game-over {
-		--width: 15rem;
-		--height: 25rem;
-		width: var(--width);
-		height: var(--height);
+	.game-over-menu {
+		background-color: color-mix(in srgb, var(--background-color) 85%, transparent);
+
+		padding: 2rem;
 		display: flex;
-		flex-flow: column;
+		flex-direction: column;
 		justify-content: center;
+		align-items: center;
+		gap: 1rem;
+
 		position: absolute;
-		left: calc((100vw - var(--width)) / 2);
-		top: calc((100vh - var(--height)) / 2);
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 		z-index: 100;
 	}
 
-	.game-over span.game-over-message {
+	.game-over-menu .game-over-message {
 		font-size: 1.5rem;
 		margin-bottom: 0.25rem;
 	}
 
-	.game-over span {
+	.game-over-menu span {
 		text-align: center;
 		display: block;
 	}
 
-	.game-over button {
+	.game-over-menu button {
 		width: 8rem;
 		margin: 0 auto;
+	}
+
+	.game-over-menu__score-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.leaderboard-label {
+		text-align: center;
+		display: block;
+	}
+
+	.leaderboard-scores-table {
+		list-style-type: none;
+		padding: 0;
+		margin: 0 auto;
+	}
+
+	:global(.leaderboard-scores-table :is(th, td)) {
+		padding: 0.125rem 0.5rem;
+	}
+
+	.leaderboard-scores-table,
+	:global(.leaderboard-scores-table input) {
+		font-size: 0.875rem;
+	}
+
+	:global(.leaderboard-scores-table input) {
+		width: 3rem;
+		padding: 0;
+		background-color: transparent;
 	}
 
 	.focus-attractor {
 		color: transparent;
 		height: 0;
-	}
-
-	.leaderboard ol {
-		list-style-type: none;
-		padding: 0;
-		margin: 1rem auto;
-	}
-
-	.leaderboard ol li > span {
-		margin-bottom: 0.2rem;
-		display: flex;
-		flex-flow: row;
-		justify-content: space-between;
-	}
-
-	.leaderboard ol li span,
-	.leaderboard ol li input {
-		font-size: 0.8rem;
-	}
-
-	.leaderboard ol li input {
-		text-align: right;
-		width: 3rem;
-		padding: 0;
-		background-color: transparent;
 	}
 </style>
