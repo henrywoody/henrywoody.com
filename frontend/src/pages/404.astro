@@ -56,6 +56,7 @@ import Layout from "../layouts/Layout.astro";
 	const gameOverMenu = document.getElementById("game-over-menu")!;
 	const gameOverScoreEl = document.getElementById("game-over-score")!;
 	const newHighScoreEl = document.getElementById("new-high-score")!;
+	const leaderboardContainer = document.getElementById("leaderboard-container")!;
 	const leaderboardScoresTableBody = document.querySelector(".leaderboard-scores-table tbody")!;
 	const playAgainBtn = document.getElementById("play-again-btn")!;
 	const focusAttractor = document.getElementById("focus-attractor") as HTMLInputElement;
@@ -93,6 +94,7 @@ import Layout from "../layouts/Layout.astro";
 		scoreDisplay.style.display = "";
 		gameOverMenu.style.display = "none";
 		newHighScoreEl.style.display = "none";
+		leaderboardContainer.style.display = "none";
 		leaderboardScoresTableBody.innerHTML = "";
 		focusAttractor.focus();
 		focusAttractor.blur();
@@ -206,6 +208,7 @@ import Layout from "../layouts/Layout.astro";
 	function endGame() {
 		gameOver = true;
 		scoreDisplay.style.display = "none";
+		gameOverScoreEl.textContent = `Score: ${score}`;
 		gameOverMenu.style.display = "";
 		buildLeaderboard();
 	}
@@ -215,6 +218,7 @@ import Layout from "../layouts/Layout.astro";
 		try {
 			const highScores = await getAsteroidsScores(scoreCount);
 
+			leaderboardContainer.style.display = "";
 			let displayScores = [...highScores];
 			let isNewHighScore = false;
 
@@ -300,7 +304,9 @@ import Layout from "../layouts/Layout.astro";
 					leaderboardScoresTableBody.appendChild(row);
 				}
 			}
-		} catch (e) {}
+		} catch (e) {
+			leaderboardContainer.style.display = "none";
+		}
 	}
 
 	function draw() {
