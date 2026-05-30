@@ -10,8 +10,13 @@ import Layout from "../layouts/Layout.astro";
 			<span class="score" id="score-display">Score: 0</span>
 			<canvas></canvas>
 
-			<div class="game-over-menu" id="game-over-menu" style="display:none;">
-				<div class="game-over-message">Game Over</div>
+			<div class="game-menu" id="pause-menu" style="display: none;">
+				<div class="game-menu__title">Paused</div>
+				<div class="game-menu__text">Press P to resume</div>
+			</div>
+
+			<div class="game-menu" id="game-over-menu" style="display: none;">
+				<div class="game-menu__title">Game Over</div>
 
 				<div class="game-over-menu__score-container">
 					<div id="game-over-score">Score: 0</div>
@@ -52,16 +57,22 @@ import Layout from "../layouts/Layout.astro";
 	const container = document.getElementById("asteroids-container")!;
 	const canvas = container.querySelector("canvas")!;
 	const ctx = canvas.getContext("2d")!;
+
 	const scoreDisplay = document.getElementById("score-display")!;
+
+	const pauseMenu = document.getElementById("pause-menu")!;
+
 	const gameOverMenu = document.getElementById("game-over-menu")!;
 	const gameOverScoreEl = document.getElementById("game-over-score")!;
 	const newHighScoreEl = document.getElementById("new-high-score")!;
 	const leaderboardContainer = document.getElementById("leaderboard-container")!;
 	const leaderboardScoresTableBody = document.querySelector(".leaderboard-scores-table tbody")!;
 	const playAgainBtn = document.getElementById("play-again-btn")!;
+
 	const focusAttractor = document.getElementById("focus-attractor") as HTMLInputElement;
 
-	let gameOver = false;
+	let isGameOver = false;
+	let isPaused = false;
 	let score = 0;
 	let time = 0;
 	let ship: Ship;
@@ -87,22 +98,30 @@ import Layout from "../layouts/Layout.astro";
 		ship = new Ship(middleOfCanvas, addBullet);
 		bullets = [];
 		asteroids = [];
-		gameOver = false;
+		isGameOver = false;
+		isPaused = false;
 		score = 0;
 		time = 0;
+
 		scoreDisplay.textContent = "Score: 0";
 		scoreDisplay.style.display = "";
+
+		pauseMenu.style.display = "none";
+
 		gameOverMenu.style.display = "none";
 		newHighScoreEl.style.display = "none";
 		leaderboardContainer.style.display = "none";
 		leaderboardScoresTableBody.innerHTML = "";
+
 		focusAttractor.focus();
 		focusAttractor.blur();
 	}
 
 	function run() {
-		update();
-		draw();
+		if (!isPaused) {
+			update();
+			draw();
+		}
 		window.requestAnimationFrame(run);
 	}
 
@@ -123,7 +142,7 @@ import Layout from "../layouts/Layout.astro";
 		checkCollisions();
 		removeInactiveObjects();
 
-		if (!gameOver) {
+		if (!isGameOver) {
 			time++;
 		}
 	}
@@ -168,7 +187,7 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	function checkCollisions() {
-		if (!gameOver) {
+		if (!isGameOver) {
 			checkShipAsteroidCollisions();
 		}
 		checkBulletAsteroidCollisions();
@@ -211,7 +230,7 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	function endGame() {
-		gameOver = true;
+		isGameOver = true;
 		scoreDisplay.style.display = "none";
 		gameOverScoreEl.textContent = `Score: ${score}`;
 		gameOverMenu.style.display = "";
@@ -316,7 +335,7 @@ import Layout from "../layouts/Layout.astro";
 
 	function draw() {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		if (!gameOver) {
+		if (!isGameOver) {
 			ship.draw(ctx);
 		}
 		for (const bullet of bullets) {
@@ -327,11 +346,23 @@ import Layout from "../layouts/Layout.astro";
 		}
 	}
 
+	function togglePause() {
+		isPaused = !isPaused;
+		if (isPaused) {
+			pauseMenu.style.display = "";
+		} else {
+			pauseMenu.style.display = "none";
+		}
+	}
+
 	function handleKeyUp(event: KeyboardEvent) {
 		ship.handleUserInput(event, "up");
 	}
 	function handleKeyDown(event: KeyboardEvent) {
 		ship.handleUserInput(event, "down");
+		if (event.key === "p" && !isGameOver) {
+			togglePause();
+		}
 	}
 
 	class Ship {
@@ -569,7 +600,7 @@ import Layout from "../layouts/Layout.astro";
 		top: var(--header-height);
 	}
 
-	.game-over-menu {
+	.game-menu {
 		background-color: color-mix(in srgb, var(--background-color) 85%, transparent);
 
 		padding: 2rem;
@@ -586,12 +617,12 @@ import Layout from "../layouts/Layout.astro";
 		z-index: 100;
 	}
 
-	.game-over-menu .game-over-message {
+	.game-menu__title {
 		font-size: 1.5rem;
 		margin-bottom: 0.25rem;
 	}
 
-	.game-over-menu span {
+	.game-menu__text {
 		text-align: center;
 		display: block;
 	}
