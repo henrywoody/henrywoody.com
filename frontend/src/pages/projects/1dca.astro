@@ -240,7 +240,9 @@ import ExternalLink from "../../components/ExternalLink.astro";
 				const x = j * cellSize;
 				const cellState = grid[i][j];
 				const color = cellState === 1 ? aliveColor : deadColor;
-				if (!color) continue;
+				if (!color) {
+					continue;
+				}
 				ctx.fillStyle = color;
 				ctx.fillRect(x, y, cellSize, cellSize);
 			}

@@ -156,7 +156,9 @@ import ExternalLink from "../../components/ExternalLink.astro";
 				const colorDistance = getColorDistanceBetween(this.color, e[0].color);
 				return !areColorsOn || colorDistance < this.colorTolerance;
 			});
-			if (!neighborDistances.length) return;
+			if (!neighborDistances.length) {
+				return;
+			}
 
 			const angleToCenter = isFlockingOn ? this.getAngleToCenterOfMass(neighborDistances) : this.velocity[1];
 			const avoidVelocity = this.getAvoidVelocity(boidsToAvoid);
@@ -200,7 +202,9 @@ import ExternalLink from "../../components/ExternalLink.astro";
 		}
 
 		getAvoidVelocity(boidsToAvoid: [Boid, number][]) {
-			if (!boidsToAvoid.length) return;
+			if (!boidsToAvoid.length) {
+				return;
+			}
 			return this.getAveVelocity(boidsToAvoid);
 		}
 
@@ -275,7 +279,9 @@ import ExternalLink from "../../components/ExternalLink.astro";
 	}
 
 	function getAveAngle(angles: number[], weights?: number[]) {
-		if (angles.length === 1) return angles[0];
+		if (angles.length === 1) {
+			return angles[0];
+		}
 		weights = weights || Array(angles.length).fill(1);
 		let xSum = 0;
 		let ySum = 0;

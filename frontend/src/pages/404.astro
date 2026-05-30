@@ -168,7 +168,9 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	function checkCollisions() {
-		if (!gameOver) checkShipAsteroidCollisions();
+		if (!gameOver) {
+			checkShipAsteroidCollisions();
+		}
 		checkBulletAsteroidCollisions();
 	}
 
@@ -317,8 +319,12 @@ import Layout from "../layouts/Layout.astro";
 		if (!gameOver) {
 			ship.draw(ctx);
 		}
-		for (const bullet of bullets) bullet.draw(ctx);
-		for (const asteroid of asteroids) asteroid.draw(ctx);
+		for (const bullet of bullets) {
+			bullet.draw(ctx);
+		}
+		for (const asteroid of asteroids) {
+			asteroid.draw(ctx);
+		}
 	}
 
 	function handleKeyUp(event: KeyboardEvent) {
@@ -361,13 +367,23 @@ import Layout from "../layouts/Layout.astro";
 		}
 
 		update(xMax: number, yMax: number) {
-			if (!this.isActive) return;
+			if (!this.isActive) {
+				return;
+			}
 			this.move(xMax, yMax);
-			if (this.isAccelerating) this.accelerate();
-			if (this.isTurningLeft) this.turnLeft();
-			if (this.isTurningRight) this.turnRight();
+			if (this.isAccelerating) {
+				this.accelerate();
+			}
+			if (this.isTurningLeft) {
+				this.turnLeft();
+			}
+			if (this.isTurningRight) {
+				this.turnRight();
+			}
 			this.shotCounter = Math.max(this.shotCounter - 1, 0);
-			if (this.isShooting && this.shotCounter === 0) this.shoot();
+			if (this.isShooting && this.shotCounter === 0) {
+				this.shoot();
+			}
 		}
 
 		move(xMax: number, yMax: number) {
