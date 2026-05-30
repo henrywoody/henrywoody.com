@@ -33,6 +33,7 @@ const { title = "Henry Woody", class: className, ...rest } = Astro.props;
 
 	body {
 		--color: #333;
+		--color--dull: #ccc;
 		--inverted-color: #eee;
 		--background-color: #fff;
 		--accent-background-color: #eee;
@@ -75,6 +76,7 @@ const { title = "Henry Woody", class: className, ...rest } = Astro.props;
 	@media (prefers-color-scheme: dark) {
 		body {
 			--color: #eee;
+			--color--dull: #777;
 			--inverted-color: #333;
 			--background-color: #333;
 			--accent-background-color: #555;

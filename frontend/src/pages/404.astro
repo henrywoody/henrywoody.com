@@ -7,15 +7,64 @@ import Layout from "../layouts/Layout.astro";
 		<h1>404: Not Found</h1>
 
 		<div id="asteroids-container">
-			<span class="score" id="score-display">Score: 0</span>
+			<span id="score-display" class="score">Score: 0</span>
 			<canvas></canvas>
 
-			<div class="game-menu" id="pause-menu" style="display: none;">
+			<div id="pause-menu" class="game-menu hidden">
 				<div class="game-menu__title">Paused</div>
 				<div class="game-menu__text">Press P to resume</div>
 			</div>
 
-			<div class="game-menu" id="game-over-menu" style="display: none;">
+			<div id="settings-menu" class="game-menu hidden">
+				<div class="game-menu__title">Settings</div>
+				<form class="settings-menu__form">
+					<div class="form-column">
+						<h3 class="form-heading">Ship</h3>
+						<label for="ship-acceleration">
+							<span class="label-text">Ship Acceleration</span>
+							<div class="input-reset-button-container">
+								<input type="number" id="ship-acceleration" name="ship-acceleration" step="0.1" />
+								<button type="button" data-reset-button-for="ship-acceleration">Reset</button>
+							</div>
+						</label>
+						<label for="ship-turn-speed">
+							<span class="label-text">Ship Turn Speed</span>
+							<div class="input-reset-button-container">
+								<input type="number" id="ship-turn-speed" name="ship-turn-speed" step="0.1" />
+								<button type="button" data-reset-button-for="ship-turn-speed">Reset</button>
+							</div>
+						</label>
+						<label for="ship-shot-cooldown-time">
+							<span class="label-text">Ship Shot Cooldown Time</span>
+							<div class="input-reset-button-container">
+								<input type="number" id="ship-shot-cooldown-time" name="ship-shot-cooldown-time" min="0" />
+								<button type="button" data-reset-button-for="ship-shot-cooldown-time">Reset</button>
+							</div>
+						</label>
+						<h3 class="form-heading">Asteroids</h3>
+						<label for="asteroid-creation-probability">
+							<span class="label-text">Asteroid Creation Probability</span>
+							<div class="input-reset-button-container">
+								<input
+									type="number"
+									id="asteroid-creation-probability"
+									name="asteroid-creation-probability"
+									min="0"
+									step="0.001"
+								/>
+								<button type="button" data-reset-button-for="asteroid-creation-probability">Reset</button>
+							</div>
+						</label>
+
+						<div class="settings-menu__form-buttons">
+							<button type="button" data-close-settings-button>Close Settings</button>
+							<button type="button" data-reset-button-for="all-settings">Reset All</button>
+						</div>
+					</div>
+				</form>
+			</div>
+
+			<div id="game-over-menu" class="game-menu hidden">
 				<div class="game-menu__title">Game Over</div>
 
 				<div class="game-over-menu__score-container">
@@ -62,6 +111,9 @@ import Layout from "../layouts/Layout.astro";
 
 	const pauseMenu = document.getElementById("pause-menu")!;
 
+	const settingsMenu = document.getElementById("settings-menu")!;
+	const settingsForm = settingsMenu.querySelector("form")!;
+
 	const gameOverMenu = document.getElementById("game-over-menu")!;
 	const gameOverScoreEl = document.getElementById("game-over-score")!;
 	const newHighScoreEl = document.getElementById("new-high-score")!;
@@ -73,12 +125,141 @@ import Layout from "../layouts/Layout.astro";
 
 	let isGameOver = false;
 	let isPaused = false;
+	let isSettingsOpen = false;
+	let hasModifiedSettings = false;
 	let score = 0;
 	let time = 0;
 	let ship: Ship;
 	let bullets: Bullet[] = [];
 	let asteroids: Asteroid[] = [];
 	let xMin: number, xMax: number, yMin: number, yMax: number;
+
+	const defaultShipAcceleration = 0.15;
+	let shipAcceleration = defaultShipAcceleration;
+	const defaultShipTurnSpeed = Math.PI / 30;
+	let shipTurnSpeed = defaultShipTurnSpeed;
+	const defaultShipShotCoolDownTime = 15;
+	let shipShotCoolDownTime = defaultShipShotCoolDownTime;
+	const defaultAsteroidCreationProbability = 0.008;
+	let asteroidCreationProbability = defaultAsteroidCreationProbability;
+
+	function setUpSettingsForm() {
+		function setShipAcceleration(value: number) {
+			shipAcceleration = value;
+			if (ship) {
+				ship.acceleration = shipAcceleration;
+			}
+			hasModifiedSettings = true;
+		}
+		function resetShipAcceleration() {
+			setShipAcceleration(defaultShipAcceleration);
+			shipAccelerationInput.value = defaultShipAcceleration.toString();
+		}
+		const shipAccelerationInput = settingsForm.querySelector("input[name='ship-acceleration']") as HTMLInputElement;
+		shipAccelerationInput.value = shipAcceleration.toString();
+		shipAccelerationInput.addEventListener("input", (e) => {
+			setShipAcceleration(Number((e.target as HTMLInputElement).value));
+		});
+		const shipAccelerationResetButton = settingsForm.querySelector(
+			"button[data-reset-button-for='ship-acceleration']",
+		) as HTMLButtonElement;
+		shipAccelerationResetButton.addEventListener("click", () => {
+			resetShipAcceleration();
+		});
+
+		function setShipTurnSpeed(value: number) {
+			shipTurnSpeed = value;
+			if (ship) {
+				ship.turnSpeed = shipTurnSpeed;
+			}
+			hasModifiedSettings = true;
+		}
+		function resetShipTurnSpeed() {
+			setShipTurnSpeed(defaultShipTurnSpeed);
+			shipTurnSpeedInput.value = defaultShipTurnSpeed.toString();
+		}
+		const shipTurnSpeedInput = settingsForm.querySelector("input[name='ship-turn-speed']") as HTMLInputElement;
+		shipTurnSpeedInput.value = shipTurnSpeed.toString();
+		shipTurnSpeedInput.addEventListener("input", (e) => {
+			setShipTurnSpeed(Number((e.target as HTMLInputElement).value));
+		});
+		const shipTurnSpeedResetButton = settingsForm.querySelector(
+			"button[data-reset-button-for='ship-turn-speed']",
+		) as HTMLButtonElement;
+		shipTurnSpeedResetButton.addEventListener("click", () => {
+			resetShipTurnSpeed();
+		});
+
+		function setShipShotCoolDownTime(value: number) {
+			shipShotCoolDownTime = value;
+			if (ship) {
+				ship.shotCoolDownTime = shipShotCoolDownTime;
+			}
+			hasModifiedSettings = true;
+		}
+		function resetShipShotCoolDownTime() {
+			setShipShotCoolDownTime(defaultShipShotCoolDownTime);
+			shipShotCoolDownTimeInput.value = defaultShipShotCoolDownTime.toString();
+		}
+		const shipShotCoolDownTimeInput = settingsForm.querySelector(
+			"input[name='ship-shot-cooldown-time']",
+		) as HTMLInputElement;
+		shipShotCoolDownTimeInput.value = shipShotCoolDownTime.toString();
+		shipShotCoolDownTimeInput.addEventListener("input", (e) => {
+			setShipShotCoolDownTime(Number((e.target as HTMLInputElement).value));
+		});
+		const shipShotCoolDownTimeResetButton = settingsForm.querySelector(
+			"button[data-reset-button-for='ship-shot-cooldown-time']",
+		) as HTMLButtonElement;
+		shipShotCoolDownTimeResetButton.addEventListener("click", () => {
+			resetShipShotCoolDownTime();
+		});
+
+		function setAsteroidCreationProbability(value: number) {
+			asteroidCreationProbability = value;
+			hasModifiedSettings = true;
+		}
+		function resetAsteroidCreationProbability() {
+			setAsteroidCreationProbability(defaultAsteroidCreationProbability);
+			asteroidCreationProbabilityInput.value = defaultAsteroidCreationProbability.toString();
+		}
+		const asteroidCreationProbabilityInput = settingsForm.querySelector(
+			"input[name='asteroid-creation-probability']",
+		) as HTMLInputElement;
+		asteroidCreationProbabilityInput.value = asteroidCreationProbability.toString();
+		asteroidCreationProbabilityInput.addEventListener("input", (e) => {
+			setAsteroidCreationProbability(Number((e.target as HTMLInputElement).value));
+		});
+		const asteroidCreationProbabilityResetButton = settingsForm.querySelector(
+			"button[data-reset-button-for='asteroid-creation-probability']",
+		) as HTMLButtonElement;
+		asteroidCreationProbabilityResetButton.addEventListener("click", () => {
+			resetAsteroidCreationProbability();
+		});
+
+		const allSettingsResetButton = settingsForm.querySelector(
+			"button[data-reset-button-for='all-settings']",
+		) as HTMLButtonElement;
+		allSettingsResetButton.addEventListener("click", () => {
+			resetShipAcceleration();
+			resetShipTurnSpeed();
+			resetShipShotCoolDownTime();
+			resetAsteroidCreationProbability();
+		});
+		const closeSettingsButton = settingsForm.querySelector("button[data-close-settings-button]") as HTMLButtonElement;
+		closeSettingsButton.addEventListener("click", () => {
+			toggleSettings();
+		});
+	}
+
+	function checkAreSettingsModified() {
+		return (
+			shipAcceleration !== defaultShipAcceleration ||
+			shipTurnSpeed !== defaultShipTurnSpeed ||
+			shipShotCoolDownTime !== defaultShipShotCoolDownTime ||
+			asteroidCreationProbability !== defaultAsteroidCreationProbability
+		);
+	}
 
 	function resizeCanvas() {
 		canvas.width = window.innerWidth;
@@ -100,17 +281,21 @@ import Layout from "../layouts/Layout.astro";
 		asteroids = [];
 		isGameOver = false;
 		isPaused = false;
+		isSettingsOpen = false;
+		hasModifiedSettings = checkAreSettingsModified();
 		score = 0;
 		time = 0;
 
 		scoreDisplay.textContent = "Score: 0";
-		scoreDisplay.style.display = "";
+		scoreDisplay.classList.remove("hidden");
 
-		pauseMenu.style.display = "none";
+		pauseMenu.classList.add("hidden");
 
-		gameOverMenu.style.display = "none";
-		newHighScoreEl.style.display = "none";
-		leaderboardContainer.style.display = "none";
+		settingsMenu.classList.add("hidden");
+
+		gameOverMenu.classList.add("hidden");
+		newHighScoreEl.classList.add("hidden");
+		leaderboardContainer.classList.add("hidden");
 		leaderboardScoresTableBody.innerHTML = "";
 
 		focusAttractor.focus();
@@ -118,7 +303,7 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	function run() {
-		if (!isPaused) {
+		if (!(isPaused || isSettingsOpen)) {
 			update();
 			draw();
 		}
@@ -152,7 +337,7 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	function makeRandomAsteroids() {
-		const asteroidCreationProb = Math.log(Math.log(time)) * 0.008;
+		const asteroidCreationProb = Math.log(Math.log(time)) * asteroidCreationProbability;
 		if (Math.random() < asteroidCreationProb) {
 			const numToCreate = Math.floor(Math.random() * 3) + 1;
 			for (let i = 0; i < numToCreate; i++) {
@@ -231,9 +416,9 @@ import Layout from "../layouts/Layout.astro";
 
 	function endGame() {
 		isGameOver = true;
-		scoreDisplay.style.display = "none";
+		scoreDisplay.classList.add("hidden");
 		gameOverScoreEl.textContent = `Score: ${score}`;
-		gameOverMenu.style.display = "";
+		gameOverMenu.classList.remove("hidden");
 		buildLeaderboard();
 	}
 
@@ -242,33 +427,35 @@ import Layout from "../layouts/Layout.astro";
 		try {
 			const highScores = await getAsteroidsScores(scoreCount);
 
-			leaderboardContainer.style.display = "";
+			leaderboardContainer.classList.remove("hidden");
 			let displayScores = [...highScores];
 			let isNewHighScore = false;
 
-			if (highScores.length && score > highScores[highScores.length - 1].score) {
-				isNewHighScore = true;
-				let insertIndex = 0;
-				if (score <= highScores[0].score) {
-					for (let i = highScores.length - 1; i >= 0; i--) {
-						if (highScores[i].score >= score) {
-							insertIndex = i + 1;
-							break;
+			if (!hasModifiedSettings) {
+				if (highScores.length && score > highScores[highScores.length - 1].score) {
+					isNewHighScore = true;
+					let insertIndex = 0;
+					if (score <= highScores[0].score) {
+						for (let i = highScores.length - 1; i >= 0; i--) {
+							if (highScores[i].score >= score) {
+								insertIndex = i + 1;
+								break;
+							}
 						}
 					}
+					displayScores.splice(insertIndex, 0, { score, name: "$this" });
+					if (displayScores.length > scoreCount) {
+						displayScores.pop();
+					}
+				} else if (highScores.length < scoreCount && score > 0) {
+					isNewHighScore = true;
+					displayScores.push({ score, name: "$this" });
 				}
-				displayScores.splice(insertIndex, 0, { score, name: "$this" });
-				if (displayScores.length > scoreCount) {
-					displayScores.pop();
-				}
-			} else if (highScores.length < scoreCount && score > 0) {
-				isNewHighScore = true;
-				displayScores.push({ score, name: "$this" });
 			}
 
 			gameOverScoreEl.textContent = `Score: ${score}`;
 			if (isNewHighScore) {
-				newHighScoreEl.style.display = "block";
+				newHighScoreEl.classList.remove("hidden");
 			}
 
 			leaderboardScoresTableBody.innerHTML = "";
@@ -329,7 +516,7 @@ import Layout from "../layouts/Layout.astro";
 				}
 			}
 		} catch (e) {
-			leaderboardContainer.style.display = "none";
+			leaderboardContainer.classList.add("hidden");
 		}
 	}
 
@@ -349,19 +536,32 @@ import Layout from "../layouts/Layout.astro";
 	function togglePause() {
 		isPaused = !isPaused;
 		if (isPaused) {
-			pauseMenu.style.display = "";
+			pauseMenu.classList.remove("hidden");
 		} else {
-			pauseMenu.style.display = "none";
+			pauseMenu.classList.add("hidden");
+		}
+	}
+
+	function toggleSettings() {
+		isSettingsOpen = !isSettingsOpen;
+		if (isSettingsOpen) {
+			settingsMenu.classList.remove("hidden");
+		} else {
+			settingsMenu.classList.add("hidden");
 		}
 	}
 
 	function handleKeyUp(event: KeyboardEvent) {
 		ship.handleUserInput(event, "up");
 	}
+
 	function handleKeyDown(event: KeyboardEvent) {
 		ship.handleUserInput(event, "down");
 		if (event.key === "p" && !isGameOver) {
 			togglePause();
+		}
+		if (event.key === "m" && !isGameOver) {
+			toggleSettings();
 		}
 	}
 
@@ -370,10 +570,10 @@ import Layout from "../layouts/Layout.astro";
 		direction: number;
 		velocity: [number, number];
 		addBulletFn: (b: Bullet) => void;
-		acceleration = 0.15;
-		turnSpeed = Math.PI / 30;
+		acceleration = shipAcceleration;
+		turnSpeed = shipTurnSpeed;
 		size = 12;
-		shotCoolDownTime = 15;
+		shotCoolDownTime = shipShotCoolDownTime;
 		isAccelerating = false;
 		isTurningLeft = false;
 		isTurningRight = false;
@@ -583,6 +783,7 @@ import Layout from "../layouts/Layout.astro";
 	window.addEventListener("keydown", handleKeyDown);
 
 	resizeCanvas();
+	setUpSettingsForm();
 	reset();
 	run();
 </script>
@@ -617,6 +818,11 @@ import Layout from "../layouts/Layout.astro";
 		z-index: 100;
 	}
 
+	.hidden {
+		display: none;
+		visibility: hidden;
+	}
+
 	.game-menu__title {
 		font-size: 1.5rem;
 		margin-bottom: 0.25rem;
@@ -625,6 +831,52 @@ import Layout from "../layouts/Layout.astro";
 	.game-menu__text {
 		text-align: center;
 		display: block;
+	}
+
+	.form-column {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.form-heading {
+		margin: 0;
+	}
+
+	.settings-menu__form label {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 2rem;
+	}
+
+	.settings-menu__form .input-reset-button-container {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.settings-menu__form input {
+		width: 6rem;
+		padding: 0.25rem;
+		border: 1px solid var(--color--dull);
+		border-radius: 4px;
+	}
+
+	.settings-menu__form input:focus {
+		border-color: var(--color);
+	}
+
+	.form-heading:not(:first-child) {
+		margin-top: 1rem;
+	}
+
+	.settings-menu__form-buttons {
+		margin-top: 1rem;
+
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5rem;
 	}
 
 	.game-over-menu button {
