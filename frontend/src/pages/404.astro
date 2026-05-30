@@ -173,14 +173,17 @@ import Layout from "../layouts/Layout.astro";
 	}
 
 	function checkShipAsteroidCollisions() {
+		const newAsteroids: Asteroid[] = [];
 		for (const asteroid of asteroids) {
 			const distance = getDistanceBetween(asteroid.position, ship.position);
 			if (distance <= asteroid.size + ship.size / 2) {
+				newAsteroids.push(...asteroid.split());
 				ship.crash();
 				endGame();
 				break;
 			}
 		}
+		asteroids.push(...newAsteroids);
 	}
 
 	function checkBulletAsteroidCollisions() {
@@ -330,8 +333,7 @@ import Layout from "../layouts/Layout.astro";
 		direction: number;
 		velocity: [number, number];
 		addBulletFn: (b: Bullet) => void;
-		acceleration = 0.3;
-		deceleration = 0.999;
+		acceleration = 0.15;
 		turnSpeed = Math.PI / 30;
 		size = 12;
 		shotCoolDownTime = 15;
@@ -371,8 +373,6 @@ import Layout from "../layouts/Layout.astro";
 		move(xMax: number, yMax: number) {
 			this.position[0] = (this.position[0] + this.velocity[0] + xMax) % xMax;
 			this.position[1] = (this.position[1] + this.velocity[1] + yMax) % yMax;
-			this.velocity[0] *= this.deceleration;
-			this.velocity[1] *= this.deceleration;
 		}
 
 		accelerate() {
